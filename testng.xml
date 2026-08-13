@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+
+<!-- One thread. The target is a shared live agent: concurrent sessions turn its
+     rate limiting into fake test failures. -->
+<suite name="ask-permission-suite" verbose="1">
+  <test name="ask.permission.ai pre-login">
+    <classes>
+      <class name="ask.ChatTest"/>
+      <class name="ask.InputTest"/>
+    </classes>
+  </test>
+</suite>

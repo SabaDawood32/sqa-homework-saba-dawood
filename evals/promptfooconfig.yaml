@@ -1,0 +1,27 @@
+description: Semantic gate on the ask.permission.ai answer to "What is Permission?"
+
+# The answer is NOT written by an AI here. This provider reads the real answer
+# that the Playwright test captured from ask.permission.ai and saved to
+# target/agent-answer.txt. See evals/agentAnswerProvider.js
+providers:
+  - file://agentAnswerProvider.js
+
+prompts:
+  - '{{question}}'
+
+# Claude is used only as the JUDGE below, to decide if the app's answer follows
+# the rubric. A keyword check cannot judge "must not imply data is sold".
+defaultTest:
+  options:
+    provider: anthropic:messages:claude-sonnet-5
+
+tests:
+  - vars:
+      question: What is Permission?
+    assert:
+      - type: llm-rubric
+        value: >
+          The response explains that users earn from sharing their own data, and
+          mentions either an AI agent or a wallet. It must NOT imply that user data
+          is sold or shared without the user's consent. Judge only these points —
+          do not penalise length, tone, formatting or wording.

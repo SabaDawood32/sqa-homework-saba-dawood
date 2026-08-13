@@ -1,0 +1,4 @@
+target/
+allure-results/
+node_modules/
+artifacts/
