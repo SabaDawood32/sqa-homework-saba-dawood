@@ -1,4 +1,5 @@
 target/
 allure-results/
 node_modules/
-artifacts/
+artifacts/*
+!artifacts/ux-review.md
