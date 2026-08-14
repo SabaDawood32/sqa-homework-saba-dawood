@@ -4,3 +4,4 @@ node_modules/
 artifacts/*
 !artifacts/ux-review.md
 !artifacts/assertions.md
+!artifacts/data-checks.md
