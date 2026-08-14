@@ -26,8 +26,10 @@ answer was bad.
 git clone <repo-url>
 cd sqa-homework-<first-last>
 
-# all 8 tests + the HTML report at artifacts/report/surefire-report.html
-mvn test surefire-report:report
+# all 8 tests, then build the HTML report at target/reports/surefire.html
+# The report is generated on each run and is not committed, so what you see
+# is your run, not mine.
+mvn surefire-report:report
 
 # watch it run (this is the default; use -Dheadless=true to hide the browser)
 mvn test -Dheadless=false
