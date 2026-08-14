@@ -5,3 +5,4 @@ artifacts/*
 !artifacts/ux-review.md
 !artifacts/assertions.md
 !artifacts/data-checks.md
+!artifacts/ai-workflow.md
