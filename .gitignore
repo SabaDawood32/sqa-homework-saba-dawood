@@ -3,3 +3,4 @@ allure-results/
 node_modules/
 artifacts/*
 !artifacts/ux-review.md
+!artifacts/assertions.md
