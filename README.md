@@ -8,7 +8,9 @@ plus one promptfoo rubric on answer quality. Target: https://ask.permission.ai
 Needs JDK 17+ and Maven. Browsers install themselves on the first run.
 
 Test 8 (`llmEvalPasses`) grades the agent's answer with an LLM judge, so it needs
-an Anthropic API key. The other 7 tests need no key.
+your own Anthropic API key. The other 7 tests need no key and pass without one.
+
+Set it as an environment variable:
 
 ```powershell
 # Windows PowerShell
@@ -19,16 +21,26 @@ $env:ANTHROPIC_API_KEY = "sk-ant-..."
 export ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-Without it, test 8 reports that the judge never ran — it does not claim the
-answer was bad.
+Or put it straight into the judge config in `evals/promptfooconfig.yaml`:
+
+```yaml
+defaultTest:
+  options:
+    provider:
+      id: anthropic:messages:claude-sonnet-5
+      config:
+        apiKey: sk-ant-...
+```
+
+Once a key is in place, test 8 runs the rubric and passes with the other 7.
+Without a key it reports that the judge never ran, rather than claiming the
+agent's answer was bad.
 
 ```bash
 git clone <repo-url>
 cd sqa-homework-<first-last>
 
 # all 8 tests, then build the HTML report at target/reports/surefire.html
-# The report is generated on each run and is not committed, so what you see
-# is your run, not mine.
 mvn surefire-report:report
 
 # watch it run (this is the default; use -Dheadless=true to hide the browser)

@@ -11,6 +11,13 @@ prompts:
 
 # Claude is used only as the JUDGE below, to decide if the app's answer follows
 # the rubric. A keyword check cannot judge "must not imply data is sold".
+#
+# The key is read from the ANTHROPIC_API_KEY environment variable. To use a key
+# from this file instead, replace the line below with:
+#   provider:
+#     id: anthropic:messages:claude-sonnet-5
+#     config:
+#       apiKey: sk-ant-...
 defaultTest:
   options:
     provider: anthropic:messages:claude-sonnet-5
