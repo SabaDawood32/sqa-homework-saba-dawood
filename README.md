@@ -1,122 +1,81 @@
 # ask.permission.ai — pre-login QA suite
 
-8 tests, Java + Playwright + TestNG + AssertJ, against the live pre-login agent,
-plus one promptfoo rubric on answer quality. Target: https://ask.permission.ai
+8 tests in Java with Playwright, TestNG and AssertJ against the live pre-login
+agent, plus one promptfoo rubric on answer quality.
+Target: https://ask.permission.ai
 
 ## Setup
 
-Needs JDK 17+ and Maven. Browsers install themselves on the first run.
-
-Test 8 (`llmEvalPasses`) grades the agent's answer with an LLM judge, so it needs
-your own Anthropic API key. The other 7 tests need no key and pass without one.
-
-Set it as an environment variable:
-
-```powershell
-# Windows PowerShell
-$env:ANTHROPIC_API_KEY = "sk-ant-..."
-```
-```bash
-# macOS / Linux
-export ANTHROPIC_API_KEY=sk-ant-...
-```
-
-Or put it straight into the judge config in `evals/promptfooconfig.yaml`:
-
-```yaml
-defaultTest:
-  options:
-    provider:
-      id: anthropic:messages:claude-sonnet-5
-      config:
-        apiKey: sk-ant-...
-```
-
-Once a key is in place, test 8 runs the rubric and passes with the other 7.
-Without a key it reports that the judge never ran, rather than claiming the
-agent's answer was bad.
+Needs JDK 17+ and Maven. Playwright installs its browsers on the first run.
 
 ```bash
-git clone <repo-url>
-cd sqa-homework-<first-last>
+git clone https://github.com/SabaDawood32/sqa-homework-saba-dawood.git
+cd sqa-homework-saba-dawood
 
-# all 8 tests, then build the HTML report at target/reports/surefire.html
+# all 8 tests, then the HTML report at target/reports/surefire.html
 mvn surefire-report:report
 
-# watch it run (this is the default; use -Dheadless=true to hide the browser)
-mvn test -Dheadless=false
+# tests only, browser hidden
+mvn test -Dheadless=true
 
-# one class
+# one class, or one test
 mvn test -Dtest=ChatTest
-
-# LLM eval on its own (needs ANTHROPIC_API_KEY).
-# Grades the agent answer saved at target/agent-answer.txt, so run mvn test first.
-# Claude is used only as the judge; the answer comes from ask.permission.ai.
-npx promptfoo@latest eval -c evals/promptfooconfig.yaml
+mvn test -Dtest=InputTest#llmEvalPasses
 ```
+
+Test 8 (`llmEvalPasses`) needs your own Anthropic API key for the judge. The
+other 7 need no key.
+
+```powershell
+$env:ANTHROPIC_API_KEY = "sk-ant-..."     # Windows PowerShell
+```
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...       # macOS / Linux
+```
+
+The key can also go directly into `evals/promptfooconfig.yaml`. With a key,
+test 8 runs the rubric and passes with the rest; without one it reports that
+the judge never ran, not that the answer was bad.
 
 ## Test strategy (TL;DR)
 
-Covered: landing renders the greeting + a usable composer; free-text → answer;
-Shift+Enter newline; blank/whitespace submit rejected; composer unlocks after the
-opening greeting; answer-quality validation for "What is Permission"; mobile
-layout + a full turn at 390px.
+Covered: pills render; a pill click and a typed question each return a real
+answer; the sign-up entry point exists pre-login; Shift+Enter adds a newline
+without sending; an empty composer sends nothing; a second question keeps the
+first answer; and the "What is Permission?" answer is graded by an LLM rubric.
 
-**Suggested-topic pills do not render on a fresh pre-login session.** They exist —
-six of them ("What is Permission", "Best way to earn ASK", …) render on a warmed
-session where the greeting has already been consumed. But on a cold automated one
-they are absent from the DOM entirely: I anchored on the "Suggested topics:"
-heading, on the pill's `.group` class, and finally on the literal string
-`"Best way to earn ASK"`, each with a 30s wait, and all three found nothing. That
-last one rules out a selector bug — the copy simply is not on the page. So the
-pill test is written against a real locator and skipped via an assumption, and it
-starts running the day pills render pre-login rather than being deleted.
-
-Skipped on purpose: cross-browser matrix (one SPA — engine bugs are not the risk
-here), post-login automation (out of scope; covered in the UX review), multi-turn
-memory.
-8 tests because 8 is the cap. Each guards a distinct failure no other test sees.
-
-## What the suite found
-
-- Navigating with the default `load` event **never resolves** — the page holds a
-  connection open for the agent, so every naive `page.navigate` times out at 30s.
-  `ChatPage#open` uses `DOMCONTENTLOADED`.
-- The ASK composer is **disabled while the opening greeting streams**, so anything
-  that types on load races it. `awaitComposerReady` waits for the real state.
-- The OneTrust cookie banner **covers the composer** until dismissed — a click
-  interception for tests, and a first-impression problem for users.
-- The typing indicator is itself a left-aligned bubble, so it is the "last agent
-  message" until the answer replaces it. The wait skips it explicitly.
+Skipped: cross-browser, since one SPA makes engine bugs the wrong risk; mobile
+and post-login automation, explored by hand in `artifacts/ux-review.md`, where
+mobile login fails on Recaptcha; and latency, since the answer streams against
+no published target.
 
 ## Key decisions
 
-- **Playwright over Selenium**: auto-waiting locators and `getByRole` out of the
-  box. Selenium would have cost an afternoon on explicit waits before the first
-  assertion. Java over the JS binding because the JVM stack is what I ship
-  fastest in — the waiting logic is the interesting part, not the language.
-- **Waiting: text-stability polling** (`ChatPage#awaitAgentReply`), not `sleep()`,
-  not the "Permission is typing…" string. Poll the bubble; call it done when the
-  text stops growing for 1.5s. Survives a slow model, a fast model, and a
-  transport change — none of which a test should know about. The typing indicator
-  is skipped rather than waited on, because it is copy and copy gets rewritten.
-- **Locators: the app's own `data-testid`s** (`agent-chat-input`,
-  `agent-chat-input-send-button`, `log-in-button`, `sign-up-button`), all in
-  `ChatPage`. Message bubbles carry no testid, so they are matched on the one
-  stable thing about them — agent rows are left-aligned, user rows right-aligned —
-  not on the Tailwind utility classes around them, which change on any restyle.
-- **Assertions on properties, not prose** (`ResponseAssertions`): length floor,
-  finished-sentence check, broken-output markers, refusal shapes, ≥2 domain
-  anchors. No exact response string is asserted anywhere.
-- **promptfoo over DeepEval and Ragas**: one YAML file, no Python toolchain, and
-  it grades a *captured* output — the real streamed answer, not a re-prompted
-  model we do not ship. Ragas assumes retrieval context invisible from outside.
-- **One mobile test, not a mirrored suite**: at 390px the new risk is layout and
-  reachability, not chat logic.
-- **Single fork, no parallelism**: the target is a shared production agent.
-  Parallel workers would turn rate limiting into fake failures.
-- **Two test classes, no page-object cathedral**: one `ChatPage` for locators
-  plus the wait, one assertions class. That is the whole framework.
+- **Playwright over Selenium**, Java over the JS binding. Actions auto-wait for
+  visible, enabled and stable, leaving only the wait Playwright cannot infer.
+- **Waiting is condition-based, never a fixed sleep.** `ChatPage#waitForAnswer`
+  waits for a *new* agent bubble, then polls its text every 300 ms and stops
+  once three consecutive reads match. Replies ranged from ~2 s to ~20 s, so any
+  constant is either flaky or wasteful. Watching the DOM settle rather than the
+  clock means a slower model or a transport change still passes. Same approach
+  elsewhere: `DOMCONTENTLOADED`, since the page holds a connection open and
+  `load` never fires; waiting out the disabled composer while the greeting
+  streams; waiting for the cookie banner to be hidden, not merely clicked.
+- **Locators live only in `ChatPage`.** Where the app ships a `data-testid` I
+  use it: it exists for tests and survives a restyle. Bubbles ship none, so
+  they match on structure — agent rows left-aligned, user rows right — not on
+  Tailwind classes, which change with any visual edit. A UI change touches one
+  file.
+- **Assertions check properties, not prose:** length 100–2000 characters, 3 of
+  6 topic word stems, 8 failure markers, an echo check. No exact text, because
+  the wording changes every run.
+- **The LLM eval grades the app's own answer,** saved by the test and read back
+  by `evals/agentAnswerProvider.js`. The model is the judge, never the author.
+- **A grader that cannot run is reported separately** from a rubric rejection,
+  so a setup problem is never shown as a product defect.
+- **Single thread** (`testng.xml`): the target is a shared live agent, and
+  parallel sessions would turn rate limiting into fake failures.
+- **Two test classes, one page object, one assertions class** — the framework.
 
 ## AI disclosure
 
@@ -124,24 +83,21 @@ See [artifacts/ai-workflow.md](artifacts/ai-workflow.md).
 
 ## Next steps
 
-With 1–2 more days: a golden set of ~30 questions scored nightly with drift
-alerting on rubric scores rather than pass/fail; capture the chat network
-response so assertions can run on the payload as well as the rendered text;
-authenticated smoke coverage behind a seeded account; nightly GitHub Actions run
-(the service ships without a PR in this repo, so PR-only CI misses the
-regressions this suite exists to catch).
+With 1–2 more days: a golden set of ~30 questions scored nightly, alerting on
+drift rather than one pass/fail; capture the chat network response so
+assertions can run on the payload too; authenticated coverage behind a seeded
+account; and a nightly CI run, since PR-only CI would miss these regressions.
 
 ## Submission checklist
 
-- [ ] Repo named `sqa-homework-<first-last>` and default branch is `main`
-- [ ] README includes exact Setup + run commands (verified from a clean clone)
-- [ ] README word count ≤ 500 (excluding commands/checkboxes)
-- [ ] Max 8 tests; all 4 required behaviours covered
-- [ ] `artifacts/assertions.md` included (≤ 300 words)
-- [ ] At least one assertion wired into an LLM-evaluation framework and running as part of the suite
-- [ ] `artifacts/ux-review.md` included (≤ 400 words, desktop + mobile, post-signup exploration, 3–5 prioritized improvements)
-- [ ] `artifacts/data-checks.md` included (≤ 300 words + SQL)
-- [ ] `artifacts/ai-workflow.md` included (≤ 300 words, all 4 questions answered)
-- [ ] `artifacts/report/` included
+- [x] Repo named `sqa-homework-<first-last>`, default branch `main`
+- [x] README includes exact Setup + run commands
+- [x] Max 8 tests; all required behaviours covered
+- [x] `artifacts/assertions.md` included
+- [x] At least one assertion wired into an LLM-evaluation framework and running as part of the suite
+- [x] `artifacts/ux-review.md` included (desktop + mobile, post-signup, 5 prioritized improvements)
+- [x] `artifacts/data-checks.md` included (with SQL)
+- [x] `artifacts/ai-workflow.md` included
+- [x] Commit history shows how the work evolved
+- [ ] `artifacts/report/` included — generated per run at `target/reports/`, not committed
 - [ ] `artifacts/demo.mp4` included (60–90 sec, narrated)
-- [ ] Commit history shows how the work evolved
