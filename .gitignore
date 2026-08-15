@@ -7,3 +7,4 @@ artifacts/*
 !artifacts/assertions.md
 !artifacts/data-checks.md
 !artifacts/ai-workflow.md
+!artifacts/demo.mp4
