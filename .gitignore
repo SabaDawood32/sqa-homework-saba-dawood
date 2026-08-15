@@ -1,6 +1,7 @@
 target/
 allure-results/
 node_modules/
+testng-demo.xml
 artifacts/*
 !artifacts/ux-review.md
 !artifacts/assertions.md

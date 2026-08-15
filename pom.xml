@@ -16,7 +16,7 @@
     <assertj.version>3.26.3</assertj.version>
     <allure.version>2.29.0</allure.version>
     <aspectj.version>1.9.22.1</aspectj.version>
-    <!-- Override with -DsuiteFile=testng-demo.xml to run the single demo test. -->
+    <!-- Override with -DsuiteFile=... to run a different TestNG suite. -->
     <suiteFile>testng.xml</suiteFile>
   </properties>
 
