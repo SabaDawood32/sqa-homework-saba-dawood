@@ -16,6 +16,8 @@
     <assertj.version>3.26.3</assertj.version>
     <allure.version>2.29.0</allure.version>
     <aspectj.version>1.9.22.1</aspectj.version>
+    <!-- Override with -DsuiteFile=testng-demo.xml to run the single demo test. -->
+    <suiteFile>testng.xml</suiteFile>
   </properties>
 
   <dependencies>
@@ -54,7 +56,7 @@
         <version>3.5.2</version>
         <configuration>
           <suiteXmlFiles>
-            <suiteXmlFile>testng.xml</suiteXmlFile>
+            <suiteXmlFile>${suiteFile}</suiteXmlFile>
           </suiteXmlFiles>
           <!-- Allure's TestNG listener attaches through the AspectJ weaver. -->
           <argLine>
